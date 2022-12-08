@@ -11,31 +11,35 @@
 
 <img src="pic.jpg" id="profile" align="right" width="500" />
 
-<h1>Sam Buxbaum</h1>
+<div id="personal_div">
+    <h1>Sam Buxbaum</h1>
 
-<p>I'm a 4th year undergraduate at UVA studying computer science and physics.</p>
-
+    <p>I'm a 4th year undergraduate at UVA studying computer science and physics. Upon graduation, I would like to pursue
+        a PhD in applied security and cryptography. I am particularly interested in internet security and privacy
+        and the dream of a fully open and decentralized internet.
+    </p>
+</div>
 <div id="research_div">
     <h2>Research Projects</h2>
 
     <h4>Privacy-Preserving Machine Learning</h4>
-    I'm working with professors David Wu and Yuan Tian and 2 other students to develop a library for 3-party privacy-preserving machine learning. I have been responsible for our nonlinear functions: division, inverse square root, and batch normalization. I have implemented the functions, experimentally tested the results, and theoretically analyzed the error.
+    I'm working with professors David Wu and Yuan Tian and 2 other students to develop a library for 
+    3-party privacy-preserving machine learning. My responsibilities have included protocol development,
+    implementation, testing, and error analysis.
 
-    <h4>Post-Quantum Primitive Relationships</h4>
-    <p>I'm working with professor Mohammad Mahmoody on a project about the fundamental relationships
-        between cryptographic primitives in the classical and post-quantum settings, 
-        specifically how relationships can differ between the two settings. Our primary research
-        question is: can we identify a primitive that classically implies one-way functions but does not
-        post-quantumly?
+    <h4>Post-Quantum Cryptography</h4>
+    <p>I'm working with professor Mohammad Mahmoody on a project in post-quantum cryptography. I have become
+        familiar with topics including interactive proofs of quantumness, post-quantum reductions, 
+        and black-box separations.
     </p>
 
     <h4>Deepfake Detection</h4>
-    <p>I'm working on a deepfake detection system with Ahmed Hussain. Whereas most existing
+    <p>I'm working on a deepfake detection system with classmate Ahmed Hussain. Whereas most existing
         systems work by detecting subtle flaws in the fake media, we take the assumption
         that deepfake generation techniques will someday produce results that are truly
         indistinguishable from reality, so a different approach entirely is necessary. Our
         approach is to create and maintain a list of "valid" media, and all other media is
-        considered "invalid". Since identifying all valid media is a daunting task, we start
+        considered "invalid." Since identifying all valid media is a daunting task, we start
         with the comparatively simple goal of recognizing and protecting news-related media.
     </p>
     <p>We hash the media to store it in a space-efficient manner. We have largely reduced the overall
@@ -43,8 +47,9 @@
         elements of cryptographic hashing and perceptual hashing. More information is available
         in the summary below.
     </p>
-    <p>The project has been recognized with a competition award, a national news interview, and 
-        conversations with a representative of the federal government and the Chief Data Scientist at Intel.
+    <p>The project has been recognized with a competition award, a 
+        <a href="https://www.wsaz.com/2022/05/16/swapped-out-hackers-target-social-media-users-with-high-tech-fake-videos/">national news interview</a>,
+        and conversations with a representative of the federal government and the Chief Data Scientist at Intel.
     </p>
 
     <a href="deepfake-summary.pdf" download>Summary</a>
