@@ -1,4 +1,8 @@
-body {background-color: #ddd3ee;}
+body {
+    background-color: #ddd3ee;
+    max-width: 800px;
+    margin: auto;    
+}
 
 div {
     width: 800px;
