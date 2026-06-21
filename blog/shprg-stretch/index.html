@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Post</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    body {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 2rem 0;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 2rem auto;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+    }
+  </style>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+<h1>Achieving Polynomial Stretch for Seed-Homomorphic Pseudorandom Generators</h1>
+<br>
+<hr>
+<p>Seed-homomorphic pseudorandom generators (SHPRGs) are an emerging tool in the design of distributed cryptographic protocols. Despite their growing popularity in the theoretical cryptography literature, I was unable to find an answer to the question:</p>
+<p><em>How can we get arbitrary (polynomial) length outputs from SHPRGs?</em></p>
+<p>With a standard length-doubling PRG, we can expand a seed once, and we can use the two halves of the output to seed two more expansions, whose outputs can then seed four expansions, and so on, until we have the length we desire. It would seem natural to apply the same technique to an SHPRG, but doing so <em>breaks the homomorphism</em>.</p>
+<p>In response, it seems that the standard approach to arbitrary stretch for SHPRGs is to just make the PRG produce <em>really</em> long outputs the first (and only) time we evaluate it. This seems fine, except that producing <em>really</em> long outputs in a single shot requires us to store <em>really</em> big public parameters (think Terabytes), which won't work in practice.</p>
+<p>This note is about solving this problem in practice. In short, we can store a compressed representation of the <em>really big</em> public parameter and only materialize it piece by piece.</p>
+<h3 id="seed-homomorphic-pseudorandom-generators">Seed-Homomorphic Pseudorandom Generators</h3>
+<p>A <em>pseudorandom generator</em> (PRG) is an algorithm that takes a small amount of randomness and deterministically expands it to a long value that is <em>hard to distinguish</em> from true randomness.</p>
+<p>A <em>seed-homomorphic PRG</em> (SHPRG) is a PRG with an extra homomorphism property in the seeds. Let <span class="math inline">\((\mathcal{X}, \oplus)\)</span> be the seed space equipped with some group operation <span class="math inline">\(\oplus\)</span>, and let <span class="math inline">\((\mathcal{Y}, \otimes)\)</span> be the output space equipped with some group operation <span class="math inline">\(\otimes\)</span>. If the PRG function is called <span class="math inline">\(G\)</span>, then for any two seeds <span class="math inline">\(s_1, s_2 \in \mathcal{X}\)</span>, the homomorphism property states that <span class="math display">\[G(s_1 \oplus s_2) = G(s_1) \otimes G(s_2)\]</span> In this note, I'll be discussing a particular SHPRG construction built on lattices, whose security depends on the Learning with Rounding (LWR) assumption, which is equivalent to the Learning with Errors (LWE) assumption.</p>
+<p>This construction works as follows. Let <span class="math inline">\(\mathcal{X} = \mathbb{Z}_q^\lambda\)</span>, where the group operation is addition mod <span class="math inline">\(q\)</span>, and let <span class="math inline">\(\mathcal{Y} = \mathbb{Z}_p^\ell\)</span>, where the group operation is addition mod <span class="math inline">\(p\)</span>, for <span class="math inline">\(p &lt; q\)</span>. We sample a random matrix <span class="math inline">\(A \in \mathbb{Z}_q^{\ell \times \lambda}\)</span>. To expand a seed <span class="math inline">\(s \in \mathbb{Z}_q^\lambda\)</span> to length <span class="math inline">\(\ell\)</span>, we multiply <span class="math inline">\(s\)</span> by <span class="math inline">\(A\)</span> and then <em>round</em> the output. <span class="math display">\[G_\mathrm{LWR}(s) = \lfloor A \cdot s \rfloor_p = (A \cdot s) \cdot (p / q) \mod p\]</span> In practice, <span class="math inline">\(q\)</span> and <span class="math inline">\(p\)</span> will both be powers of two, e.g., <span class="math inline">\(q = 2^{128}\)</span> and <span class="math inline">\(p = 2^{64}\)</span>, so the rounding operation is equivalent to a bitshift.</p>
+<p>The PRG outlined above is only <em>almost homomorphic</em>, because the rounding operation introduces one bit of error. That is, <span class="math display">\[G_\mathrm{LWR}(s_1 + s_2) = G_\mathrm{LWR}(s_1) + G_\mathrm{LWR}(s_2) + \{-1, 0, +1\}^\ell\]</span> The error in the homomorphism is what makes arbitrary polynomial stretch so hard.</p>
+<h3 id="why-is-polynomial-stretch-hard">Why is Polynomial Stretch Hard?</h3>
+<p>When using a PRG, we frequently want to be able to generate very long pseudorandom strings. A common motivation is that we want to mask (i.e., encrypt) a long message. For my purposes, I'm using the SHPRG to mask a machine learning model, which can easily be Megabytes in size for the models I'm using, and modern frontier models are now many Gigabytes. So, for the rest of this note, let's say our goal is to generate one Gigabyte of randomness.</p>
+<p>How do other PRGs generate so much randomness? Some, like AES or ChaCha, are actually pseudorandom functions, and we can evaluate the function at many points for a given key/seed. Others act as length-doubling PRGs, so we expand a short seed to an output of twice the length of the seed, and we use each half of the output as the seed to the next round of expansion.</p>
+<p>Neither of these approaches works for the LWR-based SHPRG. First of all, the SHPRG is really a PRG and not just a PRF in disguise, so querying it at multiple points for a fixed key/seed is not possible.</p>
+<p>Second, and more interestingly, if we were to set <span class="math inline">\(\ell = 2\lambda\)</span> to make it a length-doubling PRG, the second expansion <em>breaks the homomorphism</em>. Let's see why.</p>
+<p>We will need to split every output of the form <span class="math inline">\(G(s)\)</span> into a left and right half, which we'll call <span class="math inline">\(G(s)_L\)</span> and <span class="math inline">\(G(s)_R\)</span>. What we want is for <span class="math inline">\(G(G(s_1)_L + G(s_2)_L)\)</span> to equal <span class="math inline">\(G(G(s_1)_L) + G(G(s_2)_L) + e\)</span> for some small error <span class="math inline">\(e \in \{-1, 0, +1\}^{2\lambda}\)</span>. However, what we have instead is <span class="math display">\[G(G(s_1)_L + G(s_2)_L) = G(G(s_1 + s_2)_L + e) = G(G(s_1 + s_2)_L) + G(e) + e&#39;\]</span> where all steps above follow by the homomorphism property. The <span class="math inline">\(G(e)\)</span> term is the killer, because it means that the error in the homomorphism gets <em>randomized</em> to large magnitude values. In fact, there's nothing we can do to correct for <span class="math inline">\(G(e)\)</span>, because for suitable parameters, <span class="math inline">\(G(e)\)</span> is itself pseudorandom and hard to predict.</p>
+<p>So, applying the length-doubling PRG paradigm to SHPRGs won't work. What can we do?</p>
+<h3 id="incrementally-materializing-the-public-parameter-matrix">Incrementally Materializing the Public Parameter Matrix</h3>
+<p>The idea behind this note is that we can make the public parameter matrix <em>arbitrarily large</em> to allow for <em>arbitrary expansion</em>, and we can do so while only ever materializing a single row of the matrix at a time.</p>
+<p>We generate the public parameter matrix by sampling a standard PRG seed (e.g., an AES key). Every element <span class="math inline">\(y_i\)</span> in the output vector is generated by rounding the dot product of the <span class="math inline">\(i^\mathrm{th}\)</span> row of the matrix and the SHPRG seed vector. We can expand the standard PRG seed to materialize the first row and compute the first element <span class="math inline">\(y_1\)</span>, then materialize the second row to compute the second element <span class="math inline">\(y_2\)</span>, and so on. To compute each element, we only need one row of the matrix to be materialized.</p>
+<img src="expansion.png">
+<p>There are two benefits to this approach.</p>
+<ol type="1">
+<li>We don't need to place a bound on how much randomness we can generate. We can treat the matrix as having an infinite number of rows, although we can only ever make use of a polynomial number of them.</li>
+<li>The memory consumption is barely any larger than what is required to represent the SHPRG seed.</li>
+</ol>
+<p>The first point is important when the values to be masked have an unknown size, as we do not need to decide on a bound up front.</p>
+<p>The second point is more important in practice, as it completely alleviates the main constraint of this SHPRG construction, which is the memory consumption. Consider a more typical SHPRG matrix <span class="math inline">\(A \in \mathbb{Z}^{\ell \times \lambda}\)</span>. We’re only going to be generating <span class="math inline">\(\ell\)</span> random elements, but we must pay the cost of storing <span class="math inline">\(\ell \times \lambda\)</span> elements, a <span class="math inline">\(\lambda \times\)</span> overhead. In practice, I'm using <span class="math inline">\(\lambda = 3072\)</span> (determined according to the Lattice Estimator for my parameters). This means that generating a Gigabyte of randomness consumes <span class="math inline">\(3\)</span> Terabytes of memory. This is really bad!</p>
+<p>In constrast, to generate <span class="math inline">\(1\)</span> Gigabyte of randomness with the partial materialization approach outlined above, we only need a small overhead over the <span class="math inline">\(1\)</span> Gigabyte needed just to store the output, which is feasible even on pretty weak hardware.</p>
+<h3 id="empirical-results">Empirical Results</h3>
+<p>I implemented this technique in my <a href="https://github.com/sambux1/jagguar">secure aggregation library</a>. How does it perform in practice? The results are pretty good.</p>
+<p>First of all, it works! It generates incrementally and returns correct results.</p>
+<p>The performance could use some work. My first draft implementation does not include much optimization, and it generates pseudorandomness at a rate of <strong>0.5 MB/s</strong>.</p>
+<p>At that rate, it would take about half an hour to generate 1 GB of pseudorandomness. The main area for improvement would be to increase the generation rate. Parallelism could help, but my goal is speed on consumer hardware, so parallelism isn't a magic solution here.</p>
+<p>Finally, the memory consumption problem has been completely solved, which was really the primary motivation for this note in the first place. As expected, there's a small memory overhead that decreases as we generate more randomness.</p>
+<img src="shprg_memory_overhead.png">
+<h3 id="conclusion">Conclusion</h3>
+<p>This note describes some of the difficulties of translating elegant theoretical tools into clean and efficient implementations. If anybody reading this has implemented or plans to implement an SHPRG, I'd love to hear about it!</p>
+</body>
+</html>
